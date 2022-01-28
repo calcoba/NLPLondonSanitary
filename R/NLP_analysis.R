@@ -1,18 +1,10 @@
-# Hello, world!
-#
-# This is an example function named 'hello'
-# which prints 'Hello, world!'.
-#
-# You can learn more about package authoring with RStudio at:
-#
-#   http://r-pkgs.had.co.nz/
-#
-# Some useful keyboard shortcuts for package authoring:
-#
-#   Install Package:           'Ctrl + Shift + B'
-#   Check Package:             'Ctrl + Shift + E'
-#   Test Package:              'Ctrl + Shift + T'
 library(utf8)
+library(spacyr)
+library(kableExtra)
+
+#spacy_install()
+#spacy_download_langmodel('en')
+spacy_initialize(model = "en_core_web_sm")
 
 
 urlSanitaryLondon <- "https://www.gutenberg.org/cache/epub/47308/pg47308.txt"
@@ -49,3 +41,48 @@ substring(paragraphswoNL[1], 1, 200)
 
 paragraphs <- gsub("[ ]{2,}", " ", paragraphswoNL)
 substring(paragraphs[1], 1, 200)
+
+phrases <- spacy_tokenize(paragraphs, what = "sentence")
+
+phrases
+v_phrases <- unlist(phrases)
+v_phrases
+numphrases <- length(v_phrases)
+sum(v_phrases=='')
+#v_phrases <- v_phrases[-which(v_phrases=="")]
+
+hist(nchar(v_phrases),
+     main = 'Histogram of sentence size',
+     xlab = 'Sentence size (number of characters',
+     ylab = 'Ocurrences')
+
+tokens <- spacy_tokenize(paragraphs)
+v_tokens <- unlist(tokens)
+v_tokens[1:10]
+length(v_tokens)
+length(unique(v_tokens))
+head(sort(table(v_tokens), decreasing = TRUE), n = 25)
+plot(head(sort(table(v_tokens), decreasing = TRUE), n = 10),
+     xlab = "Token",
+     ylab = "Ocurrences")
+
+
+tic <- Sys.time()
+res <- lapply(v_phrases,
+              spacy_parse,
+              dependency = TRUE, nounphrase = TRUE
+)
+
+df <- res[[1]]
+for (i in 2:length(res)){
+  df <- rbind(df, res[[i]])
+}
+
+Sys.time()-tic
+
+kable_styling(kable(df[1:20, c(3:ncol(df))]),
+              font_size = 15
+)
+
+spacy_finalize()
+sessionInfo()
