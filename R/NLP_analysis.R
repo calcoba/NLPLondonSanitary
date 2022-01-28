@@ -44,9 +44,7 @@ substring(paragraphs[1], 1, 200)
 
 phrases <- spacy_tokenize(paragraphs, what = "sentence")
 
-phrases
 v_phrases <- unlist(phrases)
-v_phrases
 numphrases <- length(v_phrases)
 sum(v_phrases=='')
 #v_phrases <- v_phrases[-which(v_phrases=="")]
@@ -80,9 +78,10 @@ for (i in 2:length(res)){
 
 Sys.time()-tic
 
-kable_styling(kable(df[1:20, c(3:ncol(df))]),
+kable_styling(kable(df[1000:5000, c(3:ncol(df))]),
               font_size = 15
 )
 
+length(df)
 spacy_finalize()
 sessionInfo()
