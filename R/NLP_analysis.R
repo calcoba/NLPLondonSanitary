@@ -8,6 +8,7 @@ library(quanteda.textstats)
 library(quanteda.textplots)
 library(ggplot2)
 
+set.seed(0)
 #spacy_install()
 #spacy_download_langmodel('en')
 spacy_initialize(model = "en_core_web_sm")
@@ -38,30 +39,31 @@ sum(linesQ_NFC != linesQ)
 
 stringQ <- paste(linesQ, collapse = "\n")
 
-paragraphs <- unlist(strsplit(stringQ, "\\n\\n\\n"))
-which(paragraphs == '')
+chapters <- unlist(strsplit(stringQ, "\\n\\n\\n"))
+which(chapters == '')
 
-paragraphswoNL <- gsub("[\n]{1,}", " ", paragraphs)
-paragraphs <- gsub("[ ]{2,}", " ", paragraphswoNL)
-paragraphsClean <- gsub("[\\\"]{1,}", "", paragraphs)
+chapterswoNL <- gsub("[\n]{1,}", " ", chapters)
+chapters <- gsub("[ ]{2,}", " ", chapterswoNL)
+chaptersSeparated <- gsub("[\\\"]{1,}", "", chapters)
 
 footnotes_indexes = list()
-for (string in paragraphsClean){
+for (string in chaptersSeparated){
   footnote_index = unlist(gregexpr(pattern = "FOOTNOTES", string, fixed = TRUE))
   footnotes_indexes <- append(footnotes_indexes, footnote_index-1)
 }
+chapter1 <- paste(substring(chaptersSeparated[1], 1),
+                  substring(chaptersSeparated[2], 21),
+                  substring(chaptersSeparated[3], 22),
+                  substring(chaptersSeparated[4], 21),
+                  substring(chaptersSeparated[5], 20, footnotes_indexes[5]))
 
-cleanChapters = list(substring(paragraphsClean[1], 1),
-                    substring(paragraphsClean[2], 21),
-                    substring(paragraphsClean[3], 22),
-                    substring(paragraphsClean[4], 21),
-                    substring(paragraphsClean[5], 20, footnotes_indexes[5]),
-                    substring(paragraphsClean[7], 1, footnotes_indexes[7]),
-                    substring(paragraphsClean[9], 1, footnotes_indexes[9]),
-                    substring(paragraphsClean[11], 1, footnotes_indexes[11]),
-                    substring(paragraphsClean[13], 1, footnotes_indexes[13]),
-                    substring(paragraphsClean[15], 1, footnotes_indexes[15]),
-                    substring(paragraphsClean[17], 1, footnotes_indexes[17])
+cleanChapters = list(chapter1,
+                    substring(chaptersSeparated[7], 1, footnotes_indexes[7]),
+                    substring(chaptersSeparated[9], 1, footnotes_indexes[9]),
+                    substring(chaptersSeparated[11], 1, footnotes_indexes[11]),
+                    substring(chaptersSeparated[13], 1, footnotes_indexes[13]),
+                    substring(chaptersSeparated[15], 1, footnotes_indexes[15]),
+                    substring(chaptersSeparated[17], 1, footnotes_indexes[17])
                     )
 
 cleanChaptersObj <- as.character(cleanChapters)
@@ -76,30 +78,19 @@ hist(nchar(v_phrases),
      xlab = 'Sentence size (number of characters',
      ylab = 'Ocurrences')
 
-tokens <- spacy_tokenize(cleanChaptersObj,
-                         remove_punct = TRUE)
-v_tokens <- unlist(tokens)
-v_tokens[1:10]
-length(v_tokens)
-length(unique(v_tokens))
-head(sort(table(v_tokens), decreasing = TRUE), n = 25)
-plot(head(sort(table(v_tokens), decreasing = TRUE), n = 10),
-     xlab = "Token",
-     ylab = "Ocurrences")
-
-
-#downloadCoreNLP()
-
-model <- bpe(unlist(cleanChaptersObj[1:7]), coverage = 0.9999, vocab_size = 7000)
-
-subtoks2 <- bpe_encode(model, x = cleanChaptersObj[8:11], type='subwords')
-head(unlist(subtoks2), n=20)
+for (i in 1:length(cleanChaptersObj)){
+  chapterPhrases <- spacy_tokenize(cleanChaptersObj[[i]], what = "sentence")
+  chapterV_phrases <- unlist(chapterPhrases)
+  hist(nchar(chapterV_phrases),
+       main = paste('Histogram of sentence size Chapter ', i),
+       xlab = 'Sentence size (number of characters',
+       ylab = 'Ocurrences')
+}
 
 texts_caps <- unlist(cleanChaptersObj)
 names(texts_caps) <- paste('Chap. ', 1:length(texts_caps))
 corpus_capsQ <- corpus(texts_caps)
 docvars(corpus_capsQ, field="Chapter") <- 1:length(texts_caps)
-corpus_capsQ
 
 dfm_capsQ <- dfm(tokens(corpus_capsQ),
                  tolower = TRUE)
@@ -117,7 +108,6 @@ plot(groups,
 )
 rect.hclust(groups, k=4)
 
-topfeatures(dfm_capsQ)
 dfm_capsQ_1 <- dfm(tokens(corpus_capsQ,
                           remove_punct = TRUE),
                    )
@@ -158,20 +148,28 @@ for (i in 1:length(dfm_parts_noPunct_noSW)){
   print(paste("Top less frecuent features for Chap.", i))
   print(topfeatures(dfm_parts_noPunct_noSW[[i]], decreasing = FALSE))
 }
+displayed = list()
+`%!in%` <- Negate(`%in%`)
+for (i in 1:length(corpus_capsQ)){
+  for (j in 1:length(corpus_capsQ)){
+    if (i!=j && paste(i,j) %!in% displayed){
+      displayed <- append(displayed, paste(i,j))
+      displayed <- append(displayed, paste(j,i))
+      compare_corpus <- corpus_subset(corpus_capsQ, Chapter %in% c(i, j))
 
+      compare_dfm <- tokens(compare_corpus, remove_punct = TRUE) %>%
+        tokens_remove(stopwords("en")) %>%
+        tokens_group(groups = Chapter) %>%
+        dfm()
 
-compare_corpus <- corpus_subset(corpus_capsQ, Chapter %in% c("11", "10"))
+      result_keyness <- textstat_keyness(compare_dfm, target = as.character(i))
+      keyness_plot <- textplot_keyness(result_keyness)
+      print(keyness_plot)
 
-compare_dfm <- tokens(compare_corpus, remove_punct = TRUE) %>%
-  tokens_remove(stopwords("en")) %>%
-  tokens_group(groups = Chapter) %>%
-  dfm()
+    }
 
-result_keyness <- textstat_keyness(compare_dfm, target = "11")
-
-textplot_keyness(result_keyness)
-
-
+  }
+}
 
 spacy_finalize()
 sessionInfo()
