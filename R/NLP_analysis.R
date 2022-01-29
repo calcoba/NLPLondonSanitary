@@ -88,7 +88,6 @@ plot(head(sort(table(v_tokens), decreasing = TRUE), n = 10),
      ylab = "Ocurrences")
 
 
-
 #downloadCoreNLP()
 
 model <- bpe(unlist(cleanChaptersObj[1:7]), coverage = 0.9999, vocab_size = 7000)
@@ -171,6 +170,7 @@ compare_dfm <- tokens(compare_corpus, remove_punct = TRUE) %>%
 result_keyness <- textstat_keyness(compare_dfm, target = "11")
 
 textplot_keyness(result_keyness)
+
 
 
 spacy_finalize()
