@@ -11,6 +11,11 @@ library(ggplot2)
 set.seed(0)
 #spacy_install()
 #spacy_download_langmodel('en')
+if (file.exists('Images')){
+  print('Directory already exist')
+} else {
+  dir.create('Images')
+}
 spacy_initialize(model = "en_core_web_sm")
 
 # Loading the book from the online repository
@@ -202,3 +207,4 @@ for (i in 1:length(corpus_capsQ)){
 
 spacy_finalize()
 sessionInfo()
+
