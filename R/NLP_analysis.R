@@ -26,9 +26,6 @@ grep(pattern = "INDEX", lines, fixed = TRUE)
 
 linesQ <- lines[(155:17644)]
 
-length(linesQ)
-length(lines)
-
 linesQ[1:5]
 linesQ[17485:17490]
 
@@ -72,19 +69,24 @@ phrases <- spacy_tokenize(cleanChaptersObj, what = "sentence")
 v_phrases <- unlist(phrases)
 numphrases <- length(v_phrases)
 sum(v_phrases=='')
-#v_phrases <- v_phrases[-which(v_phrases=="")]
+
+png(file="Images/Sentences_size.png", width=1200, height=700)
 hist(nchar(v_phrases),
      main = 'Histogram of sentence size',
-     xlab = 'Sentence size (number of characters',
+     xlab = 'Sentence size (number of characters)',
      ylab = 'Ocurrences')
+dev.off()
 
 for (i in 1:length(cleanChaptersObj)){
   chapterPhrases <- spacy_tokenize(cleanChaptersObj[[i]], what = "sentence")
   chapterV_phrases <- unlist(chapterPhrases)
+  png(file=paste("Images/Sentences_size_chapter", i, ".png"),
+      width=1200, height=700)
   hist(nchar(chapterV_phrases),
-       main = paste('Histogram of sentence size Chapter ', i),
+       main = paste('Histogram of sentence size Chapters)', i),
        xlab = 'Sentence size (number of characters',
        ylab = 'Ocurrences')
+  dev.off()
 }
 
 texts_caps <- unlist(cleanChaptersObj)
@@ -99,6 +101,8 @@ distMatrix <- dist(as.matrix(dfm_capsQ),
                    method="euclidean")
 groups <- hclust(distMatrix, method = "ward.D")
 
+png(file=paste("Images/Distances_dendogram.png"),
+    width=1200, height=700)
 plot(groups,
      cex =1, #Size of labels
      hang= -1, #Same hight labels
@@ -107,7 +111,7 @@ plot(groups,
      main = "" #Text of drawing
 )
 rect.hclust(groups, k=4)
-
+dev.off()
 dfm_capsQ_1 <- dfm(tokens(corpus_capsQ,
                           remove_punct = TRUE),
                    )
@@ -138,16 +142,20 @@ for (i in 1:length(dfm_parts_noPunct_noSW)){
 
   features_dfm$feature <- with(features_dfm, reorder(feature, -frequency))
 
+  png(file=paste("Images/Frequent_word_chapter", i, ".png"),
+      width=1200, height=700)
   print(ggplot(features_dfm, aes(x = feature, y = frequency)) +
-          ggtitle(paste("Chapter:", i)) +
-          geom_point() +
-          theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+        ggtitle(paste("Chapter:", i)) +
+        geom_point() +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+  dev.off()
 }
 
 for (i in 1:length(dfm_parts_noPunct_noSW)){
   print(paste("Top less frecuent features for Chap.", i))
   print(topfeatures(dfm_parts_noPunct_noSW[[i]], decreasing = FALSE))
 }
+
 displayed = list()
 `%!in%` <- Negate(`%in%`)
 for (i in 1:length(corpus_capsQ)){
@@ -164,7 +172,10 @@ for (i in 1:length(corpus_capsQ)){
 
       result_keyness <- textstat_keyness(compare_dfm, target = as.character(i))
       keyness_plot <- textplot_keyness(result_keyness)
+      png(file=paste("Images/Keyness_Chapter", i, "_Chapter", j, ".png"),
+          width=1200, height=700)
       print(keyness_plot)
+      dev.off()
 
     }
 
