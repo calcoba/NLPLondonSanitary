@@ -13,19 +13,23 @@ set.seed(0)
 #spacy_download_langmodel('en')
 spacy_initialize(model = "en_core_web_sm")
 
-
+# Loading the book from the online repository
 urlSanitaryLondon <- "https://www.gutenberg.org/cache/epub/47308/pg47308.txt"
 lines <- readLines(urlSanitaryLondon,
                    encoding = "UTF-8")
 
 grep(pattern="***", lines, fixed = TRUE)
 
+# Identify the start and end of the text we are interesed in and select those
+# lines
 grep(pattern = "THE health of the people", lines, fixed = TRUE)
 
 grep(pattern = "INDEX", lines, fixed = TRUE)
 
 linesQ <- lines[(155:17644)]
 
+# Display the firsts and last lines to check we have selected the part we are
+# interested in and check that all characters are UTF8
 linesQ[1:5]
 linesQ[17485:17490]
 
@@ -34,11 +38,14 @@ linesQ[!utf8_valid(linesQ)]
 linesQ_NFC <- utf8_normalize(linesQ)
 sum(linesQ_NFC != linesQ)
 
+# Generate a single string with the complete book and divide each in chapters
 stringQ <- paste(linesQ, collapse = "\n")
 
 chapters <- unlist(strsplit(stringQ, "\\n\\n\\n"))
 which(chapters == '')
 
+# Different preprocessing for cleaning the text. Deleting footnotes and
+# merguing the different parts of the first chapter
 chapterswoNL <- gsub("[\n]{1,}", " ", chapters)
 chapters <- gsub("[ ]{2,}", " ", chapterswoNL)
 chaptersSeparated <- gsub("[\\\"]{1,}", "", chapters)
@@ -65,6 +72,8 @@ cleanChapters = list(chapter1,
 
 cleanChaptersObj <- as.character(cleanChapters)
 
+# Count the number of characters for each of the senteces. Globally and for each
+# chapter. Save a histogram for each of them.
 phrases <- spacy_tokenize(cleanChaptersObj, what = "sentence")
 v_phrases <- unlist(phrases)
 numphrases <- length(v_phrases)
@@ -89,11 +98,13 @@ for (i in 1:length(cleanChaptersObj)){
   dev.off()
 }
 
+# Generate the corpus for each of the chapters.
 texts_caps <- unlist(cleanChaptersObj)
 names(texts_caps) <- paste('Chap. ', 1:length(texts_caps))
 corpus_capsQ <- corpus(texts_caps)
 docvars(corpus_capsQ, field="Chapter") <- 1:length(texts_caps)
 
+# Compute the distance between the chapters. Generate a dendogram and save it.
 dfm_capsQ <- dfm(tokens(corpus_capsQ),
                  tolower = TRUE)
 
@@ -112,6 +123,9 @@ plot(groups,
 )
 rect.hclust(groups, k=4)
 dev.off()
+
+# Compute the most used words globally and for each of the chapters. For each
+# of the chapters also save a plot representing this frequency analysis.
 dfm_capsQ_1 <- dfm(tokens(corpus_capsQ,
                           remove_punct = TRUE),
                    )
@@ -135,6 +149,7 @@ for (i in 1:length(corpus_capsQ)){
                                             stopwords("en"))
 }
 
+# Display the word analysis for each chapter. Generate a plot and save it.
 for (i in 1:length(dfm_parts_noPunct_noSW)){
   print(paste("Top frecuent features for Chap.", i))
   print(topfeatures(dfm_parts_noPunct_noSW[[i]]))
@@ -151,11 +166,14 @@ for (i in 1:length(dfm_parts_noPunct_noSW)){
   dev.off()
 }
 
+# Display the less frequent words for each of the chapters.
 for (i in 1:length(dfm_parts_noPunct_noSW)){
   print(paste("Top less frecuent features for Chap.", i))
   print(topfeatures(dfm_parts_noPunct_noSW[[i]], decreasing = FALSE))
 }
 
+# Generate a keyness analysis for each pair and chapter. Generate a plot and
+# save it.
 displayed = list()
 `%!in%` <- Negate(`%in%`)
 for (i in 1:length(corpus_capsQ)){
